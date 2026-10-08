@@ -1,7 +1,7 @@
 """Routes a user message to the right tool."""
 
 from .tools import TOOLS
-
+import re
 ROUTER_PROMPT = """You are the routing layer for a customer-support agent.
 
 Available tools:
@@ -18,11 +18,19 @@ Respond with the name of the single best tool."""
 def route(llm, message):
     m = message.lower()
     # fast paths — skip the LLM call for obvious cases
-    if "ticket" in m:
-        return "lookup_ticket"
-    if "invoice" in m or "charge" in m or "billing" in m:
-        return "invoice_status"
+    #Before
+    # if "ticket" in m:
+    #     return "lookup_ticket"
+    # if "invoice" in m or "charge" in m or "billing" in m:
+    #     return "invoice_status"
 
+    #After
+    if re.search(r"INV-\d+", m):
+        return "invoice_status"
+    if re.search(r"TKT-\d+", m):
+        return "lookup_ticket"
+
+    # Fallback: ask the LLM to choose the tool
     name = llm.complete(ROUTER_PROMPT.format(message=message)).strip()
     if name not in TOOLS:
         name = list(TOOLS)[0]
