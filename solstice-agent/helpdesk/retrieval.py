@@ -1,6 +1,7 @@
 """Knowledge-base retrieval: embedding recall + LLM rerank."""
 
 import os
+import re
 from difflib import SequenceMatcher
 
 from . import config, embeddings
@@ -49,8 +50,13 @@ def dedupe(chunks):
     return kept
 
 
+def _tokenize(text):
+    """Split text into lowercase alphanumeric tokens, stripping punctuation."""
+    return re.findall(r"[a-z0-9]+", text.lower())
+
+
 def _score(query_tokens, chunk):
-    chunk_tokens = set(chunk.lower().split())
+    chunk_tokens = set(_tokenize(chunk))
     return sum(1 for t in query_tokens if t in chunk_tokens)
 
 
@@ -78,7 +84,7 @@ def search(llm, query, k=None):
 
     # # the top passage is almost always the doc's title/header block — skip it
     # return [chunk for _, chunk in reranked][:k]
-    q_tokens = set(query.lower().split())
+    q_tokens = _tokenize(query)  # strip punctuation so "429?" matches "429"
     reranked = sorted(candidates, key=lambda c: _score(q_tokens, c), reverse=True)
     return reranked[:k]
     # here we saved 12 LLM calls per request

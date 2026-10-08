@@ -25,13 +25,23 @@ def route(llm, message):
     #     return "invoice_status"
 
     #After
-    if re.search(r"INV-\d+", m):
-        return "invoice_status"
-    if re.search(r"TKT-\d+", m):
-        return "lookup_ticket"
+    # if re.search(r"INV-\d+", m):
+    #     return "invoice_status"
+    # if re.search(r"TKT-\d+", m):
+    #     return "lookup_ticket"
 
     # Fallback: ask the LLM to choose the tool
     name = llm.complete(ROUTER_PROMPT.format(message=message)).strip()
     if name not in TOOLS:
-        name = list(TOOLS)[0]
+        name = "search_kb"
+
+    # Guard: data-lookup tools are useless without a concrete identifier.
+    # Fall back to search_kb if the required identifier is missing.
+    if name == "invoice_status" and not re.search(r"INV-\d+", message, re.I):
+        name = "search_kb"
+    if name == "lookup_ticket" and not re.search(r"TKT-\d+", message, re.I):
+        name = "search_kb"
+    if name == "list_user_tickets" and not re.search(r"[\w.+-]+@[\w.-]+", message):
+        name = "search_kb"
+
     return name

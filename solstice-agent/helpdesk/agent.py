@@ -9,6 +9,8 @@ from .tools import TOOLS
 SYSTEM = (
     "You are the Solstice support agent. Answer the customer's question "
     "using the context provided. Be concise and friendly."
+    "If the context does not contain enough information to answer, say: "
+    "'I don't have that information — please contact support at help@solstice.app.'"
 )
 
 
@@ -30,8 +32,15 @@ class Agent:
             + "\n\nQuestion: " + message
             + "\nAnswer:"
         )
-        if len(prompt) > config.MAX_PROMPT_CHARS:
-            prompt = prompt[: config.MAX_PROMPT_CHARS]
+        # if len(prompt) > config.MAX_PROMPT_CHARS:
+        #     prompt = prompt[: config.MAX_PROMPT_CHARS]
+
+        QUESTION_SUFFIX = "\n\nContext:\n" + context + "\n\nQuestion: " + message + "\nAnswer:"
+        budget = config.MAX_PROMPT_CHARS - len(SYSTEM) - len(QUESTION_SUFFIX)
+        history = self.memory.render()
+        if len(history) > budget:
+            history = history[-budget:]   # keep the most recent turns
+        prompt = SYSTEM + "\n\nConversation:\n" + history + QUESTION_SUFFIX
 
         try:
             answer = self.llm.complete(prompt, temperature=0.2)
