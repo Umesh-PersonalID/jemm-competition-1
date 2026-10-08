@@ -15,6 +15,7 @@ Passage: {passage}
 RELEVANCE: rate how relevant the passage is to the query on a scale of 0-10.
 Respond with a single integer."""
 
+_INDEX = None
 
 def load_documents():
     docs = []
@@ -49,11 +50,13 @@ def dedupe(chunks):
 
 
 def search(llm, query, k=None):
+    global _INDEX
     k = k or config.TOP_K
-    index = build_index()
+    if _INDEX is None:
+        _INDEX = build_index()
     qv = embeddings.embed(query)
 
-    scored = [(embeddings.similarity(qv, vec), chunk) for chunk, vec in index]
+    scored = [(embeddings.similarity(qv, vec), chunk) for chunk, vec in _INDEX]
     scored.sort(key=lambda x: x[0], reverse=True)
     candidates = [chunk for _, chunk in scored[: config.RERANK_CANDIDATES]]
     candidates = dedupe(candidates)
