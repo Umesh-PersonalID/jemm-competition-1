@@ -9,8 +9,6 @@ from .tools import TOOLS
 SYSTEM = (
     "You are the Solstice support agent. Answer the customer's question "
     "using the context provided. Be concise and friendly."
-    "If the context does not contain enough information to answer, say: "
-    "'I don't have that information — please contact support at help@solstice.app.'"
 )
 
 
