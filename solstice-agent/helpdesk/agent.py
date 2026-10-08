@@ -34,7 +34,7 @@ class Agent:
             prompt = prompt[: config.MAX_PROMPT_CHARS]
 
         try:
-            answer = self.llm.complete(prompt, temperature=0.1)
+            answer = self.llm.complete(prompt, temperature=0.2)
         except LLMError:
             answer = "Sorry — something went wrong on our end. Please try again."
 
