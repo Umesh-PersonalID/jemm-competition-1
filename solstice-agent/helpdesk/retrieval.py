@@ -49,6 +49,11 @@ def dedupe(chunks):
     return kept
 
 
+def _score(query_tokens, chunk):
+    chunk_tokens = set(chunk.lower().split())
+    return sum(1 for t in query_tokens if t in chunk_tokens)
+
+
 def search(llm, query, k=None):
     global _INDEX
     k = k or config.TOP_K
@@ -62,14 +67,18 @@ def search(llm, query, k=None):
     candidates = dedupe(candidates)
 
     reranked = []
-    for chunk in candidates:
-        raw = llm.complete(RERANK_PROMPT.format(query=query, passage=chunk))
-        try:
-            score = int(raw.strip().split()[0])
-        except (ValueError, IndexError):
-            score = 0
-        reranked.append((score, chunk))
-    reranked.sort(key=lambda x: x[0], reverse=True)
+    # for chunk in candidates:
+    #     raw = llm.complete(RERANK_PROMPT.format(query=query, passage=chunk))
+    #     try:
+    #         score = int(raw.strip().split()[0])
+    #     except (ValueError, IndexError):
+    #         score = 0
+    #     reranked.append((score, chunk))
+    # reranked.sort(key=lambda x: x[0], reverse=True)
 
-    # the top passage is almost always the doc's title/header block — skip it
-    return [chunk for _, chunk in reranked][:k]
+    # # the top passage is almost always the doc's title/header block — skip it
+    # return [chunk for _, chunk in reranked][:k]
+    q_tokens = set(query.lower().split())
+    reranked = sorted(candidates, key=lambda c: _score(q_tokens, c), reverse=True)
+    return reranked[:k]
+    # here we saved 12 LLM calls per request
